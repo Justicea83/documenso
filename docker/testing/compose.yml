@@ -3,6 +3,8 @@ name: documenso-test
 services:
   database:
     image: postgres:15
+    volumes:
+      - documenso_database:/var/lib/postgresql/data
     environment:
       - POSTGRES_USER=documenso
       - POSTGRES_PASSWORD=password
@@ -51,4 +53,36 @@ services:
     ports:
       - 3000:3000
     volumes:
-      - ../../apps/web/example/cert.p12:/opt/documenso/cert.p12
+      - ../../certs/cert.p12:/opt/documenso/cert.p12
+
+  minio:
+    image: minio/minio
+    container_name: minio
+    ports:
+      - 9002:9002
+      - 9001:9001
+    volumes:
+      - minio:/data
+    environment:
+      MINIO_ROOT_USER: documenso
+      MINIO_ROOT_PASSWORD: password
+    entrypoint: sh
+    command: -c 'mkdir -p /data/documenso && minio server /data --console-address ":9001" --address ":9002"'
+
+  adminer:
+    image: dpage/pgadmin4:latest
+    environment:
+      PGADMIN_DEFAULT_EMAIL: 'admin@example.com'
+      PGADMIN_DEFAULT_PASSWORD: 'password'
+      PGADMIN_LISTEN_PORT: '5050'
+    depends_on:
+      - database
+    ports:
+      - '${FORWARD_PGADMIN_PORT:-5050}:5050'
+    volumes:
+      - pgadmin-data-documenso:/var/lib/pgadmin
+
+volumes:
+  pgadmin-data-documenso:
+  minio:
+  documenso_database:
